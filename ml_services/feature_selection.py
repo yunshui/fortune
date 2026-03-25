@@ -24,7 +24,16 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif
 from sklearn.model_selection import cross_val_score
-import lightgbm as lgb
+
+# LightGBM 导入为可选（仅在使用 model-importance 方法时需要）
+LGB_AVAILABLE = False
+try:
+    import lightgbm as lgb
+    LGB_AVAILABLE = True
+except (ImportError, OSError) as e:
+    logger = None  # 临时占位
+    print(f"⚠️  LightGBM 不可用: {e}")
+    print("   统计方法仍然可用，模型重要性法将不可用")
 
 # 导入项目模块
 from config import WATCHLIST as STOCK_LIST
@@ -358,6 +367,9 @@ def feature_selection_model_importance(X, y, feature_names, top_k=500):
     - selected_features: 选择的特征索引
     - feature_scores: 特征得分DataFrame
     """
+    if not LGB_AVAILABLE:
+        raise ImportError("LightGBM 不可用，无法使用模型重要性法。请安装 LightGBM 或使用 statistical 方法。")
+
     logger.info("=" * 50)
     print("🔬 LightGBM模型重要性特征选择")
     logger.info("=" * 50)

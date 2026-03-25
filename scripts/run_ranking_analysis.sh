@@ -4,23 +4,39 @@
 #   ./run_ranking_analysis.sh                              # 使用默认参数（上个月之前的一年）
 #   ./run_ranking_analysis.sh 2024-01-01 2025-12-31         # 自定义日期范围
 #   ./run_ranking_analysis.sh 2024-01-01 2025-12-31 markdown  # 自定义日期范围和输出格式
+#   ./run_ranking_analysis.sh -d 2026-03-24                 # 使用指定日期作为结束日期，开始日期为一年前
+#   ./run_ranking_analysis.sh --date 2026-03-24             # 同 -d
 
 set -e  # 遇到错误立即退出
 
 # 获取项目根目录（脚本所在目录的父目录）
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# 默认参数（自动计算上个月之前的一年）
-if [ -z "$1" ]; then
+# 解析参数
+START_DATE=""
+END_DATE=""
+OUTPUT_FORMAT="all"
+
+# 支持 --d / -d / --date 作为日期参数
+if [ "$1" = "--date" ] || [ "$1" = "-d" ] || [ "$1" = "--d" ]; then
+    # 使用 --date 或 -d 或 --d 参数
+    END_DATE="$2"
+    START_DATE=$(date -j -v-1y -f "%Y-%m-%d" "$END_DATE" +%Y-%m-%d)
+    OUTPUT_FORMAT=${3:-all}
+elif [ -z "$1" ]; then
     # 未提供日期参数，自动计算上个月之前的一年
-    # 获取上个月的最后一天
-    END_DATE=$(date -d "$(date +%Y-%m-01) -1 day" +%Y-%m-%d)
-    # 获取一年前的同一天
-    START_DATE=$(date -d "$END_DATE -1 year" +%Y-%m-%d)
+    # macOS 兼容的日期计算
+    END_DATE=$(date -v-1m -v1d +%Y-%m-%d)  # 上个月第一天
+    START_DATE=$(date -j -v-1y -f "%Y-%m-%d" "$END_DATE" +%Y-%m-%d)  # 一年前的同一天
 else
     # 提供了日期参数，使用用户指定的日期
     START_DATE=$1
-    END_DATE=${2:-$(date -d "$(date +%Y-%m-01) -1 day" +%Y-%m-%d)}
+    if [ -z "$2" ]; then
+        # 未提供结束日期，自动计算上个月之前的日期
+        END_DATE=$(date -v-1m -v1d +%Y-%m-%d)
+    else
+        END_DATE=$2
+    fi
     OUTPUT_FORMAT=${3:-all}
 fi
 
@@ -84,8 +100,8 @@ echo "=========================================="
 echo "步骤 2/2: 查找回测交易记录文件"
 echo "=========================================="
 
-# 查找最新的交易记录文件
-LATEST_TRADES_FILE=$(find "$OUTPUT_DIR" -name "backtest_20d_trades_*.csv" -type f -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
+# 查找最新的交易记录文件（macOS 兼容）
+LATEST_TRADES_FILE=$(find "$OUTPUT_DIR" -name "backtest_20d_trades_*.csv" -type f 2>/dev/null | xargs ls -t 2>/dev/null | head -1)
 
 if [ -z "$LATEST_TRADES_FILE" ]; then
     echo "❌ 错误：未找到回测交易记录文件"

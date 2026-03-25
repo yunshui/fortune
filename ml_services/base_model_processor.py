@@ -10,8 +10,17 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
-import lightgbm as lgb
 from ml_services.logger_config import get_logger
+
+logger = get_logger('base_model_processor')
+
+# LightGBM 导入为可选
+LGB_AVAILABLE = False
+try:
+    import lightgbm as lgb
+    LGB_AVAILABLE = True
+except (ImportError, OSError) as e:
+    pass  # 静默处理，稍后在使用时检查
 
 logger = get_logger('base_model_processor')
 

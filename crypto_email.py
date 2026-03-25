@@ -417,13 +417,13 @@ def resolve_conflicting_signals(buy_signals, sell_signals, tav_score=None, buy_t
 
 
 def send_email(to, subject, text, html):
-    smtp_server = os.environ.get("YAHOO_SMTP", "smtp.mail.yahoo.com")
-    smtp_user = os.environ.get("YAHOO_EMAIL")
-    smtp_pass = os.environ.get("YAHOO_APP_PASSWORD")
+    smtp_server = os.environ.get("EMAIL_SMTP", "smtp.qq.com")
+    smtp_user = os.environ.get("EMAIL_ADDRESS")
+    smtp_pass = os.environ.get("EMAIL_AUTHCODE")
     sender_email = smtp_user
 
     if not smtp_user or not smtp_pass:
-        print("Error: Missing YAHOO_EMAIL or YAHOO_APP_PASSWORD in environment variables.")
+        print("Error: Missing EMAIL_ADDRESS or EMAIL_AUTHCODE in environment variables.")
         return False
 
     # 如果to是字符串，转换为列表
@@ -1027,7 +1027,7 @@ if __name__ == "__main__":
     html += "</body></html>"
 
     # 获取收件人（默认 fallback）
-    recipient_env = os.environ.get("RECIPIENT_EMAIL", "wonglaitung@google.com")
+    recipient_env = os.environ.get("RECIPIENT_EMAIL", "your_email@example.com")
     
     # 如果环境变量中有多个收件人（用逗号分隔），则拆分为列表
     if ',' in recipient_env:

@@ -1104,10 +1104,10 @@ class HSI_Predictor:
             content = self.generate_email_content(score, trend, feature_details)
 
             # 邮件配置
-            sender_email = os.environ.get("YAHOO_EMAIL")
-            email_password = os.environ.get("YAHOO_APP_PASSWORD")
-            smtp_server = os.environ.get("YAHOO_SMTP", "smtp.163.com")
-            recipient_email = os.environ.get("RECIPIENT_EMAIL", "wonglaitung@google.com")
+            sender_email = os.environ.get("EMAIL_ADDRESS")
+            email_password = os.environ.get("EMAIL_AUTHCODE")
+            smtp_server = os.environ.get("EMAIL_SMTP", "smtp.qq.com")
+            recipient_email = os.environ.get("RECIPIENT_EMAIL", "your_email@example.com")
 
             if ',' in recipient_email:
                 recipients = [r.strip() for r in recipient_email.split(',')]
@@ -1116,7 +1116,7 @@ class HSI_Predictor:
 
             if not sender_email or not email_password:
                 print("❌ 邮件配置不完整，跳过邮件发送")
-                print("   请设置环境变量：YAHOO_EMAIL, YAHOO_APP_PASSWORD, RECIPIENT_EMAIL")
+                print("   请设置环境变量：EMAIL_ADDRESS, EMAIL_AUTHCODE, RECIPIENT_EMAIL")
                 return False
 
             import smtplib

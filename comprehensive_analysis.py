@@ -1380,10 +1380,10 @@ def send_email(subject, content, html_content=None):
         from email.mime.multipart import MIMEMultipart
         
         # 从环境变量获取邮件配置
-        sender_email = os.environ.get("YAHOO_EMAIL")
-        email_password = os.environ.get("YAHOO_APP_PASSWORD")
-        smtp_server = os.environ.get("YAHOO_SMTP", "smtp.163.com")
-        recipient_email = os.environ.get("RECIPIENT_EMAIL", "wonglaitung@google.com")
+        sender_email = os.environ.get("EMAIL_ADDRESS")
+        email_password = os.environ.get("EMAIL_AUTHCODE")
+        smtp_server = os.environ.get("EMAIL_SMTP", "smtp.qq.com")
+        recipient_email = os.environ.get("RECIPIENT_EMAIL", "your_email@example.com")
         
         if ',' in recipient_email:
             recipients = [recipient.strip() for recipient in recipient_email.split(',')]

@@ -421,34 +421,41 @@ class TopicModeler:
     def load_model(self, filepath='data/lda_topic_model.pkl'):
         """
         加载模型
-        
+
         Args:
             filepath: 模型文件路径
-            
+
         Returns:
             bool: 是否加载成功
         """
         try:
             with open(filepath, 'rb') as f:
                 model_data = pickle.load(f)
-            
+
             self.lda_model = model_data['lda_model']
             self.vectorizer = model_data['vectorizer']
             self.n_topics = model_data['n_topics']
             self.language = model_data['language']
             self.topic_names = model_data['topic_names']
             self.feature_names = model_data['feature_names']
-            
+
             # 调试信息已删除以减少输出
             # logger.info(f"模型已从 {filepath} 加载")
             # print(f"   - 保存时间: {model_data['saved_at']}")
             # print(f"   - 主题数量: {self.n_topics}")
-            
+
             # 显示主题关键词（已禁用以减少输出）
             # self._print_topic_keywords()
-            
+
             return True
-            
+
+        except TypeError as e:
+            # NumPy 版本兼容性问题，重新生成模型
+            logger.warning(f"模型加载失败（NumPy 兼容性问题）: {e}")
+            logger.info("将重新训练 LDA 模型...")
+            # 如果加载失败，需要重新训练
+            self.train_model()
+            return True
         except Exception as e:
             logger.error(f"加载模型失败: {e}")
             return False

@@ -3436,13 +3436,13 @@ def main(run_date=None, investor_type='conservative'):
 
         # 发送邮件（将表格分段为多个 HTML 表格并包含说明）
         def send_email_with_report(df_report, to):
-            smtp_server = os.environ.get("YAHOO_SMTP", "smtp.mail.yahoo.com")
-            smtp_user = os.environ.get("YAHOO_EMAIL")
-            smtp_pass = os.environ.get("YAHOO_APP_PASSWORD")
+            smtp_server = os.environ.get("EMAIL_SMTP", "smtp.qq.com")
+            smtp_user = os.environ.get("EMAIL_ADDRESS")
+            smtp_pass = os.environ.get("EMAIL_AUTHCODE")
             sender_email = smtp_user
 
             if not smtp_user or not smtp_pass:
-                print("Error: Missing YAHOO_EMAIL or YAHOO_APP_PASSWORD in environment variables.")
+                print("Error: Missing EMAIL_ADDRESS or EMAIL_AUTHCODE in environment variables.")
                 return False
 
             if isinstance(to, str):
@@ -4455,7 +4455,7 @@ def main(run_date=None, investor_type='conservative'):
             print("❌ 发送邮件失败，已重试3次")
             return False
 
-        recipient_env = os.environ.get("RECIPIENT_EMAIL", "wonglaitung@google.com")
+        recipient_env = os.environ.get("RECIPIENT_EMAIL", "your_email@example.com")
         recipients = [r.strip() for r in recipient_env.split(',')] if ',' in recipient_env else [recipient_env]
         print("📧 发送邮件到:", ", ".join(recipients))
         send_email_with_report(df_report, recipients)

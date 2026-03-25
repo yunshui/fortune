@@ -136,6 +136,11 @@ class Backtest20DHoldPeriod:
             for cat_idx in categorical_features:
                 col_name = model_features[cat_idx]
                 if col_name in X_test.columns:
+                    # 如果是字符串类型，使用对应的编码器转换
+                    if X_test[col_name].dtype == 'object':
+                        encoder = categorical_encoders[col_name]
+                        X_test[col_name] = encoder.transform(X_test[col_name].astype(str))
+                    # 确保是整数类型
                     X_test[col_name] = X_test[col_name].astype(np.int32)
 
             # 使用 Pool 对象进行预测

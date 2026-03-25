@@ -27,7 +27,15 @@ from sklearn.model_selection import TimeSeriesSplit
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, log_loss, roc_auc_score, f1_score, precision_score, recall_score
 from sklearn.linear_model import LogisticRegression
-import lightgbm as lgb
+
+# LightGBM 导入为可选（仅在使用 LightGBMModel 时需要）
+LGB_AVAILABLE = False
+try:
+    import lightgbm as lgb
+    LGB_AVAILABLE = True
+except (ImportError, OSError) as e:
+    print(f"⚠️  LightGBM 不可用: {e}")
+    print("   LightGBMModel 将不可用，但 CatBoost 和其他模型仍然可用")
 
 # 缓存配置
 CACHE_DIR = 'data/stock_cache'
@@ -2046,6 +2054,13 @@ class LightGBMModel(BaseTradingModel):
         self.model = None
         self.scaler = StandardScaler()
         self.model_type = 'lgbm'  # 模型类型标识
+
+        # 检查 LightGBM 是否可用
+        if not LGB_AVAILABLE:
+            raise ImportError(
+                "LightGBM 不可用。请确保已正确安装 libomp 库。\n"
+                "建议使用 CatBoost 模型替代（更稳定且不需要额外依赖）。"
+            )
 
     def prepare_data(self, codes, start_date=None, end_date=None, horizon=1, for_backtest=False):
         """准备训练数据（80个指标版本，优化版）
@@ -5301,8 +5316,8 @@ def main():
         sys.exit(1)
 
 
-# 向后兼容别名
-MLTradingModel = LightGBMModel
+# 向后兼容别名（使用 CatBoost 作为默认，因为更稳定）
+MLTradingModel = CatBoostModel
 
 
 if __name__ == '__main__':

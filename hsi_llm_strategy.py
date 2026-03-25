@@ -197,13 +197,13 @@ def markdown_to_html(md_text):
 # 邮件发送函数
 def send_email(to, subject, text, html=None):
     """发送邮件功能"""
-    smtp_server = os.environ.get("YAHOO_SMTP", "smtp.mail.yahoo.com")
-    smtp_user = os.environ.get("YAHOO_EMAIL")
-    smtp_pass = os.environ.get("YAHOO_APP_PASSWORD")
+    smtp_server = os.environ.get("EMAIL_SMTP", "smtp.qq.com")
+    smtp_user = os.environ.get("EMAIL_ADDRESS")
+    smtp_pass = os.environ.get("EMAIL_AUTHCODE")
     sender_email = smtp_user
 
     if not smtp_user or not smtp_pass:
-        print("Error: Missing YAHOO_EMAIL or YAHOO_APP_PASSWORD in environment variables.")
+        print("Error: Missing EMAIL_ADDRESS or EMAIL_AUTHCODE in environment variables.")
         return False
 
     # 如果to是字符串，转换为列表
@@ -745,7 +745,7 @@ def main():
         print("\n✅ 恒生指数大模型策略分析完成！")
         
         # 发送邮件
-        recipients = os.environ.get("RECIPIENT_EMAIL", "wonglaitung@gmail.com")
+        recipients = os.environ.get("RECIPIENT_EMAIL", "your_email@example.com")
         # 如果是字符串，分割成列表
         if isinstance(recipients, str):
             recipients = [email.strip() for email in recipients.split(',')]
