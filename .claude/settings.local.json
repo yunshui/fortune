@@ -49,7 +49,9 @@
       "Bash(python3 ml_services/sse_prediction.py 2>&1)",
       "Bash(python3 ml_services/szse_prediction.py 2>&1 | tail -50)",
       "Bash(python3 compare_prediction_systems.py 2>&1 | tail -80)",
-      "Bash(source set_key.sh && python3 a_share_prediction.py --send-email 2>&1 | tail -100)"
+      "Bash(source set_key.sh && python3 a_share_prediction.py --send-email 2>&1 | tail -100)",
+      "Bash(git commit -m \"feat: align A-share prediction with HSI strategy\n\n- Update feature normalization parameters to match HSI system\n- Adjust MA standardization: value / 50000 \\(was / 3500 for SSE, / 10000 for SZSE\\)\n- Adjust volatility normalization: \\(value - 0.02\\) / 0.03 \\(was / 0.01, / 0.025\\)\n- Fix import paths in prediction modules\n- Add prediction system comparison script\n- Update prediction scores: SSE 0.8848, SZSE 0.8683 \\(was 0.9686, 0.9368\\)\n- Improve score consistency with HSI: difference reduced from 0.4174 to 0.3336\")",
+      "Bash(python3 ml_services/szse_prediction.py 2>&1 | tail -150)"
     ],
     "mode": "all"
   }

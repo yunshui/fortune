@@ -93,6 +93,8 @@ class SZSE_Predictor:
         df = data.copy()
 
         # 移动平均线
+        df['MA5'] = df['Close'].rolling(window=5).mean()
+        df['MA10'] = df['Close'].rolling(window=10).mean()
         df['MA20'] = df['Close'].rolling(window=20).mean()
         df['MA60'] = df['Close'].rolling(window=60).mean()
         df['MA120'] = df['Close'].rolling(window=120).mean()
@@ -100,6 +102,36 @@ class SZSE_Predictor:
 
         # MA250斜率（趋势强度）
         df['MA250_Slope'] = df['MA250'].diff()
+
+        # RSI (相对强弱指标)
+        delta = df['Close'].diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        rs = gain / loss
+        df['RSI'] = 100 - (100 / (1 + rs))
+
+        # MACD (指数平滑异同移动平均线)
+        df['EMA12'] = df['Close'].ewm(span=12, adjust=False).mean()
+        df['EMA26'] = df['Close'].ewm(span=26, adjust=False).mean()
+        df['MACD'] = df['EMA12'] - df['EMA26']
+        df['MACD_Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
+        df['MACD_Histogram'] = df['MACD'] - df['MACD_Signal']
+
+        # KDJ (随机指标)
+        low_9 = df['Low'].rolling(window=9).min()
+        high_9 = df['High'].rolling(window=9).max()
+        rsv = (df['Close'] - low_9) / (high_9 - low_9) * 100
+        df['K'] = rsv.ewm(com=2, adjust=False).mean()
+        df['D'] = df['K'].ewm(com=2, adjust=False).mean()
+        df['J'] = 3 * df['K'] - 2 * df['D']
+
+        # 布林带 (Bollinger Bands)
+        df['BB_Middle'] = df['Close'].rolling(window=20).mean()
+        df['BB_Std'] = df['Close'].rolling(window=20).std()
+        df['BB_Upper'] = df['BB_Middle'] + (df['BB_Std'] * 2)
+        df['BB_Lower'] = df['BB_Middle'] - (df['BB_Std'] * 2)
+        df['BB_Width'] = (df['BB_Upper'] - df['BB_Lower']) / df['BB_Middle']
+        df['BB_Position'] = (df['Close'] - df['BB_Lower']) / (df['BB_Upper'] - df['BB_Lower'])
 
         # 收益率
         df['Return_1d'] = df['Close'].pct_change()
@@ -111,6 +143,7 @@ class SZSE_Predictor:
         df['Volume_MA20'] = df['Volume'].rolling(window=20).mean()
         df['Volume_MA250'] = df['Volume'].rolling(window=250).mean()
         df['Turnover_Std_20'] = df['Volume'].rolling(window=20).std()
+        df['Volume_Ratio'] = df['Volume'] / df['Volume_MA250']
 
         # OBV（能量潮指标）
         df['OBV'] = (np.sign(df['Close'].diff()) * df['Volume']).fillna(0).cumsum()
@@ -414,6 +447,113 @@ class SZSE_Predictor:
         print(f"📈 预测得分：{prediction_score:.4f}")
         print(f"🎯 预测趋势：{prediction_trend}")
 
+        # 获取技术指标数据
+        szse_df = self.calculate_technical_indicators(self.szse_data)
+        latest_szse = szse_df.iloc[-1]
+
+        # 显示技术指标详情
+        print("=" * 100)
+        print("                                     技术指标详情                                      ")
+        print("=" * 100)
+
+        # 移动平均线
+        ma5 = latest_szse.get('MA5', latest_szse['Close'])
+        ma10 = latest_szse.get('MA10', latest_szse['Close'])
+        ma20 = latest_szse.get('MA20', latest_szse['Close'])
+        ma60 = latest_szse.get('MA60', latest_szse['Close'])
+        ma120 = latest_szse.get('MA120', latest_szse['Close'])
+        ma250 = latest_szse.get('MA250', latest_szse['Close'])
+
+        print(f"\n📍 移动平均线 (MA):")
+        print(f"  MA5:   {ma5:.2f} 点  {'↑' if current_price > ma5 else '↓'}")
+        print(f"  MA10:  {ma10:.2f} 点  {'↑' if current_price > ma10 else '↓'}")
+        print(f"  MA20:  {ma20:.2f} 点  {'↑' if current_price > ma20 else '↓'}")
+        print(f"  MA60:  {ma60:.2f} 点  {'↑' if current_price > ma60 else '↓'}")
+        print(f"  MA120: {ma120:.2f} 点  {'↑' if current_price > ma120 else '↓'}")
+        print(f"  MA250: {ma250:.2f} 点  {'↑' if current_price > ma250 else '↓'}")
+
+        # RSI指标
+        rsi = latest_szse.get('RSI')
+        if pd.notna(rsi):
+            rsi_signal = "超买" if rsi > 70 else "超卖" if rsi < 30 else "正常"
+            print(f"\n📊 RSI相对强弱指标: {rsi:.1f} ({rsi_signal})")
+        else:
+            print(f"\n📊 RSI相对强弱指标: 数据不足")
+
+        # MACD指标
+        macd = latest_szse.get('MACD')
+        macd_signal = latest_szse.get('MACD_Signal')
+        macd_hist = latest_szse.get('MACD_Histogram')
+
+        if pd.notna(macd) and pd.notna(macd_signal):
+            macd_trend = "金叉" if macd > macd_signal else "死叉"
+            print(f"📊 MACD指标: {macd:.2f} (信号线: {macd_signal:.2f}, {macd_trend})")
+            if pd.notna(macd_hist):
+                macd_hist_signal = "看多" if macd_hist > 0 else "看空"
+                print(f"  MACD柱状图: {macd_hist:.2f} ({macd_hist_signal})")
+        else:
+            print(f"📊 MACD指标: 数据不足")
+
+        # KDJ指标
+        k = latest_szse.get('K')
+        d = latest_szse.get('D')
+        j = latest_szse.get('J')
+
+        if pd.notna(k) and pd.notna(d):
+            kdj_signal = "金叉" if k > d else "死叉"
+            kdj_level = "超买" if k > 80 else "超卖" if k < 20 else "正常"
+            print(f"📊 KDJ指标: K={k:.1f}, D={d:.1f} ({kdj_signal}, {kdj_level})")
+            if pd.notna(j):
+                print(f"  J值: {j:.1f}")
+        else:
+            print(f"📊 KDJ指标: 数据不足")
+
+        # 布林带
+        bb_upper = latest_szse.get('BB_Upper')
+        bb_middle = latest_szse.get('BB_Middle')
+        bb_lower = latest_szse.get('BB_Lower')
+        bb_position = latest_szse.get('BB_Position')
+
+        if pd.notna(bb_upper) and pd.notna(bb_middle) and pd.notna(bb_lower):
+            bb_signal = "上轨" if current_price > bb_upper else "下轨" if current_price < bb_lower else "中轨"
+            print(f"📊 布林带 (BB): 上轨={bb_upper:.2f}, 中轨={bb_middle:.2f}, 下轨={bb_lower:.2f}")
+            print(f"  当前位置: {bb_signal}")
+            if pd.notna(bb_position):
+                bb_pos_pct = bb_position * 100
+                print(f"  百分位: {bb_pos_pct:.1f}%")
+        else:
+            print(f"📊 布林带 (BB): 数据不足")
+
+        # 成交量
+        volume = latest_szse.get('Volume', 0)
+        volume_ma20 = latest_szse.get('Volume_MA250', 0)
+        volume_ratio = latest_szse.get('Volume_Ratio')
+
+        print(f"\n📊 成交量:")
+        print(f"  当前成交量: {volume:,.0f} 手")
+        print(f"  均量: {volume_ma20:,.0f} 手")
+        if pd.notna(volume_ratio):
+            print(f"  量比: {volume_ratio:.2f}")
+
+        # ATR (真实波幅)
+        atr = latest_szse.get('ATR')
+        if pd.notna(atr):
+            atr_pct = (atr / current_price) * 100
+            print(f"\n📊 ATR (平均真实波幅): {atr:.2f} ({atr_pct:.2f}%)")
+
+        # 波动率
+        volatility_120d = latest_szse.get('Volatility_120d', 0) * 100
+        print(f"📊 120日波动率: {volatility_120d:.2f}%")
+
+        # 支撑阻力位
+        resistance = latest_szse.get('Resistance_120d', 0)
+        support = latest_szse.get('Support_120d', 0)
+
+        if pd.notna(resistance) and pd.notna(support):
+            print(f"\n📊 支撑阻力位:")
+            print(f"  120日阻力位: {resistance:.2f} 点 (距离: {((resistance - current_price)/current_price)*100:+.2f}%)")
+            print(f"  120日支撑位: {support:.2f} 点 (距离: {((support - current_price)/current_price)*100:+.2f}%)")
+
         # 按权重排序特征
         sorted_features = sorted(
             feature_details,
@@ -421,7 +561,7 @@ class SZSE_Predictor:
             reverse=True
         )
 
-        print("=" * 100)
+        print("\n" + "=" * 100)
         print("                              关键因素分析（按权重排序）                                   ")
         print("=" * 100)
 
@@ -448,10 +588,7 @@ class SZSE_Predictor:
         print("                                     关键市场指标                                      ")
         print("=" * 100)
 
-        ma250 = self.features.get('MA250', 0)
         volume_ma250 = self.features.get('Volume_MA250', 0)
-        ma120 = self.features.get('MA120', 0)
-        volatility_120d = self.features.get('Volatility_120d', 0) * 100 if self.features.get('Volatility_120d') else 0
 
         print(f"250日均线（MA250）：{ma250:.2f} 点")
         print(f"250日成交量均值：{volume_ma250:,.0f} 手")
