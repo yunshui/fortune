@@ -42,7 +42,14 @@
       "Bash(source set_key.sh && python3 hsi_prediction.py 2>&1 | tail -40)",
       "Bash(python3 hk_stock_analysis.py 2>&1)",
       "Bash(python3 a_share_prediction.py --send-email 2>&1 | tail -100)",
-      "Bash(source set_key.sh && python3 a_share_prediction.py --send-email 2>&1 | tail -60)"
+      "Bash(source set_key.sh && python3 a_share_prediction.py --send-email 2>&1 | tail -60)",
+      "Bash(git commit -m \"feat: add email option to a_share_prediction.py\n\n- Add --send-email flag for sending prediction email\n- Load email configuration from environment variables\n- Send comprehensive A-share prediction email with trading signals\")",
+      "Bash(python3 compare_prediction_systems.py 2>&1 | tail -150)",
+      "Bash(python3 ml_services/sse_prediction.py 2>&1 | tail -60)",
+      "Bash(python3 ml_services/sse_prediction.py 2>&1)",
+      "Bash(python3 ml_services/szse_prediction.py 2>&1 | tail -50)",
+      "Bash(python3 compare_prediction_systems.py 2>&1 | tail -80)",
+      "Bash(source set_key.sh && python3 a_share_prediction.py --send-email 2>&1 | tail -100)"
     ],
     "mode": "all"
   }

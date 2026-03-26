@@ -7,6 +7,7 @@
 """
 
 import os
+import sys
 import json
 import pandas as pd
 import numpy as np
@@ -14,10 +15,13 @@ from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
-# 获取项目根目录
-script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-data_dir = os.path.join(script_dir, 'data')
-output_dir = os.path.join(script_dir, 'output')
+# 获取项目根目录并添加到路径
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+sys.path.insert(0, project_root)
+
+data_dir = os.path.join(project_root, 'data')
+output_dir = os.path.join(project_root, 'output')
 
 # 确保目录存在
 os.makedirs(data_dir, exist_ok=True)
@@ -237,7 +241,7 @@ class SZSE_Predictor:
         print(f"  ✅ 特征计算完成（{len(self.features)} 个特征）")
 
     def normalize_feature(self, feature_name, value):
-        """特征标准化（使用z-score标准化）"""
+        """特征标准化（与港股HSI预测系统保持一致）"""
         # RS_Signal和Trend特征通常是0-1的二元值，直接映射到[-1, 1]
         if 'RS_Signal' in feature_name or 'Trend' in feature_name:
             # 将0-1映射到[-1, 1]：0 -> -1, 1 -> 1
@@ -248,19 +252,20 @@ class SZSE_Predictor:
             # 标准化到[-1, 1]区间，假设收益率在[-0.2, 0.2]范围内
             return np.clip(value / 0.2, -1, 1)
 
-        # MA相关特征，使用相对标准化
+        # MA相关特征，使用与港股一致的标准化参数
         elif 'MA' in feature_name:
-            # A股深成指MA值通常在8000-12000点之间，使用相对标准化
             if pd.isna(value):
                 return 0
-            return np.tanh(value / 10000)  # 假设MA值在10000左右
+            # 与港股HSI保持一致的标准化参数
+            return np.tanh(value / 50000)  # 假设MA值在50000左右
 
-        # 波动率特征
+        # 波动率特征 - 与港股HSI保持一致
         elif 'Volatility' in feature_name:
-            # 波动率通常在0.005-0.03之间
+            # 波动率通常在0.01-0.05之间
             if pd.isna(value):
                 return 0
-            return np.clip((value - 0.01) / 0.025, -1, 1)
+            # 与港股HSI保持一致的标准化参数
+            return np.clip((value - 0.02) / 0.03, -1, 1)
 
         # Level特征
         elif 'Level' in feature_name:
