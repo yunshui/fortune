@@ -404,40 +404,79 @@ class AShareEmailSystem:
         <h2>🎯 交易信号</h2>
 """
 
-        if signals:
-            content += """
-        <table class="signals-table">
-            <thead>
-                <tr>
-                    <th>股票代码</th>
-                    <th>股票名称</th>
-                    <th>信号</th>
-                    <th>当前价格</th>
-                    <th>理由</th>
-                </tr>
-            </thead>
-            <tbody>
+        # 分离买入和卖出信号
+        buy_signals = [s for s in signals if s['signal'] == 'BUY']
+        sell_signals = [s for s in signals if s['signal'] == 'SELL']
+
+        # 排序：买入按价格从低到高，卖出按价格从高到低
+        buy_signals_sorted = sorted(buy_signals, key=lambda x: x['price'])
+        sell_signals_sorted = sorted(sell_signals, key=lambda x: -x['price'])
+
+        if buy_signals:
+            content += f"""
+        <div class="market-summary" style="background-color: #e8f5e9; border-left: 4px solid #43a047;">
+            <h2 style="margin-top: 0; color: #2e7d32;">🟢 强烈推荐买入 ({len(buy_signals)}只)</h2>
+            <table class="signals-table">
+                <thead>
+                    <tr>
+                        <th>股票代码</th>
+                        <th>股票名称</th>
+                        <th>当前价格</th>
+                        <th>买入理由</th>
+                    </tr>
+                </thead>
+                <tbody>
 """
 
-            for signal in signals:
-                signal_class = 'buy' if signal['signal'] == 'BUY' else 'sell'
-                signal_text = '买入' if signal['signal'] == 'BUY' else '卖出'
-
+            for signal in buy_signals_sorted:
                 content += f"""
-                <tr>
-                    <td>{signal['code']}</td>
-                    <td>{signal['name']}</td>
-                    <td class="{signal_class}">{signal_text}</td>
-                    <td>{signal['price']:.2f}</td>
-                    <td>{signal['reason']}</td>
-                </tr>
+                    <tr>
+                        <td>{signal['code']}</td>
+                        <td><strong>{signal['name']}</strong></td>
+                        <td style="color: #e53935; font-weight: bold;">¥{signal['price']:.2f}</td>
+                        <td>{signal['reason']}</td>
+                    </tr>
 """
 
             content += """
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
 """
-        else:
+
+        if sell_signals:
+            content += f"""
+        <div class="market-summary" style="background-color: #ffebee; border-left: 4px solid #e53935;">
+            <h2 style="margin-top: 0; color: #c62828;">🔴 推荐卖出 ({len(sell_signals)}只)</h2>
+            <table class="signals-table">
+                <thead>
+                    <tr>
+                        <th>股票代码</th>
+                        <th>股票名称</th>
+                        <th>当前价格</th>
+                        <th>卖出理由</th>
+                    </tr>
+                </thead>
+                <tbody>
+"""
+
+            for signal in sell_signals_sorted:
+                content += f"""
+                    <tr>
+                        <td>{signal['code']}</td>
+                        <td><strong>{signal['name']}</strong></td>
+                        <td style="color: #43a047; font-weight: bold;">¥{signal['price']:.2f}</td>
+                        <td>{signal['reason']}</td>
+                    </tr>
+"""
+
+            content += """
+                </tbody>
+            </table>
+        </div>
+"""
+
+        if not signals:
             content += """
         <p>📌 当前无交易信号</p>
 """
