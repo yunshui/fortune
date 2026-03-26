@@ -59,6 +59,13 @@ except ImportError:
     }
     TOTAL_STOCKS_COUNT = len(STOCK_LIST)
 
+# 导入A股预测器
+try:
+    from ml_services.sse_prediction import SSE_Predictor
+    from ml_services.szse_prediction import SZSE_Predictor
+except ImportError:
+    print("⚠️ A股预测模块不可用")
+
 
 class AShareEmailSystem:
     """A股市场邮件通知系统"""
@@ -148,7 +155,7 @@ class AShareEmailSystem:
             print(f"❌ 获取市场数据失败: {e}")
 
     def generate_trading_signals(self):
-        """生成交易信号"""
+        """生成交易信号（包含详细技术分析）"""
         print("🎯 生成交易信号...")
 
         signals = []
@@ -162,38 +169,173 @@ class AShareEmailSystem:
 
             try:
                 # 计算技术指标
-                if self.technical_analyzer:
-                    # 这里可以添加技术分析逻辑
-                    pass
+                df = stock_data.copy()
 
-                # 简单示例：基于移动平均线生成信号
-                latest = stock_data.iloc[-1]
-                ma5 = stock_data['Close'].rolling(5).mean().iloc[-1]
-                ma20 = stock_data['Close'].rolling(20).mean().iloc[-1]
+                # 移动平均线
+                df['MA5'] = df['Close'].rolling(5).mean()
+                df['MA10'] = df['Close'].rolling(10).mean()
+                df['MA20'] = df['Close'].rolling(20).mean()
+                df['MA60'] = df['Close'].rolling(60).mean()
 
-                # 买入信号：短期均线上穿长期均线
-                if ma5 > ma20:
-                    signals.append({
-                        'code': stock_code,
-                        'name': stock_name,
-                        'signal': 'BUY',
-                        'price': latest['Close'],
-                        'ma5': ma5,
-                        'ma20': ma20,
-                        'reason': '短期均线上穿长期均线'
-                    })
+                # RSI
+                delta = df['Close'].diff()
+                gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+                loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+                rs = gain / loss
+                df['RSI'] = 100 - (100 / (1 + rs))
 
-                # 卖出信号：短期均线下穿长期均线
-                elif ma5 < ma20:
-                    signals.append({
-                        'code': stock_code,
-                        'name': stock_name,
-                        'signal': 'SELL',
-                        'price': latest['Close'],
-                        'ma5': ma5,
-                        'ma20': ma20,
-                        'reason': '短期均线下穿长期均线'
-                    })
+                # MACD
+                df['EMA12'] = df['Close'].ewm(span=12, adjust=False).mean()
+                df['EMA26'] = df['Close'].ewm(span=26, adjust=False).mean()
+                df['MACD'] = df['EMA12'] - df['EMA26']
+                df['MACD_Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
+
+                # KDJ
+                low_9 = df['Low'].rolling(window=9).min()
+                high_9 = df['High'].rolling(window=9).max()
+                rsv = (df['Close'] - low_9) / (high_9 - low_9) * 100
+                df['K'] = rsv.ewm(com=2, adjust=False).mean()
+                df['D'] = df['K'].ewm(com=2, adjust=False).mean()
+                df['J'] = 3 * df['K'] - 2 * df['D']
+
+                # 布林带
+                df['BB_Middle'] = df['Close'].rolling(window=20).mean()
+                df['BB_Std'] = df['Close'].rolling(window=20).std()
+                df['BB_Upper'] = df['BB_Middle'] + (df['BB_Std'] * 2)
+                df['BB_Lower'] = df['BB_Middle'] - (df['BB_Std'] * 2)
+                df['BB_Position'] = (df['Close'] - df['BB_Lower']) / (df['BB_Upper'] - df['BB_Lower'])
+
+                # ATR
+                df['High_Low'] = df['High'] - df['Low']
+                df['High_Close'] = np.abs(df['High'] - df['Close'].shift())
+                df['Low_Close'] = np.abs(df['Low'] - df['Close'].shift())
+                df['TR'] = df[['High_Low', 'High_Close', 'Low_Close']].max(axis=1)
+                df['ATR'] = df['TR'].rolling(window=14).mean()
+
+                # 支撑阻力
+                df['Support_20d'] = df['Low'].rolling(window=20).min()
+                df['Resistance_20d'] = df['High'].rolling(window=20).max()
+
+                latest = df.iloc[-1]
+                ma5 = latest['MA5']
+                ma10 = latest['MA10']
+                ma20 = latest['MA20']
+                ma60 = latest['MA60']
+                rsi = latest['RSI']
+                macd = latest['MACD']
+                macd_signal = latest['MACD_Signal']
+                k = latest['K']
+                d = latest['D']
+                j = latest['J']
+                bb_position = latest['BB_Position']
+                bb_lower = latest['BB_Lower']
+                bb_upper = latest['BB_Upper']
+                atr = latest['ATR']
+                support_20d = latest['Support_20d']
+                resistance_20d = latest['Resistance_20d']
+
+                # 判断信号和详细理由
+                signal = 'HOLD'
+                reason = ''
+                tech_analysis = []
+
+                # 均线分析
+                if ma5 > ma10 > ma20:
+                    signal = 'BUY'
+                    reason = '短期均线多头排列，趋势向上'
+                    tech_analysis.append('MA5>MA10>MA20多头排列')
+                elif ma5 < ma10 < ma20:
+                    signal = 'SELL'
+                    reason = '短期均线空头排列，趋势向下'
+                    tech_analysis.append('MA5<MA10<MA20空头排列')
+                elif ma5 > ma20 and ma10 < ma20:
+                    signal = 'BUY'
+                    reason = '短期均线拐头向上'
+                    tech_analysis.append('MA5上穿MA20')
+                elif ma5 < ma20 and ma10 > ma20:
+                    signal = 'SELL'
+                    reason = '短期均线拐头向下'
+                    tech_analysis.append('MA5下穿MA20')
+
+                # RSI分析
+                if pd.notna(rsi):
+                    if rsi < 30:
+                        if signal != 'SELL':
+                            tech_analysis.append(f'RSI={rsi:.1f}超卖，反弹信号')
+                    elif rsi > 70:
+                        if signal != 'BUY':
+                            tech_analysis.append(f'RSI={rsi:.1f}超买，回调风险')
+                    else:
+                        tech_analysis.append(f'RSI={rsi:.1f}正常')
+
+                # MACD分析
+                if pd.notna(macd) and pd.notna(macd_signal):
+                    if macd > macd_signal:
+                        tech_analysis.append(f'MACD金叉({macd:.2f}>({macd_signal:.2f})')
+                    else:
+                        tech_analysis.append(f'MACD死叉({macd:.2f}<{macd_signal:.2f})')
+
+                # KDJ分析
+                if pd.notna(k) and pd.notna(d):
+                    if k > d:
+                        tech_analysis.append(f'KDJ金叉(K={k:.1f}>D={d:.1f})')
+                        if k > 80:
+                            tech_analysis.append('KDJ超买')
+                    else:
+                        tech_analysis.append(f'KDJ死叉(K={k:.1f}<D={d:.1f})')
+                        if k < 20:
+                            tech_analysis.append('KDJ超卖')
+
+                # 布林带分析
+                if pd.notna(bb_position):
+                    if bb_position > 0.8:
+                        tech_analysis.append(f'接近布林带上轨({bb_position*100:.0f}%)')
+                    elif bb_position < 0.2:
+                        tech_analysis.append(f'接近布林带下轨({bb_position*100:.0f}%)')
+                    else:
+                        tech_analysis.append(f'布林带中位({bb_position*100:.0f}%)')
+
+                # ATR波动分析
+                if pd.notna(atr) and pd.notna(latest['Close']):
+                    atr_pct = (atr / latest['Close']) * 100
+                    tech_analysis.append(f'ATR波动率{atr_pct:.2f}%')
+
+                # 支撑阻力分析
+                if pd.notna(support_20d) and pd.notna(resistance_20d):
+                    support_dist = ((latest['Close'] - support_20d) / support_20d) * 100
+                    resistance_dist = ((resistance_20d - latest['Close']) / latest['Close']) * 100
+                    tech_analysis.append(f'支撑{support_20d:.2f}({support_dist:+.1f}%)')
+                    tech_analysis.append(f'阻力{resistance_20d:.2f}({resistance_dist:+.1f}%)')
+
+                # 成交量分析
+                volume = latest['Volume']
+                vol_str = f"{volume/100000000:.1f}亿" if volume > 0 else "N/A"
+
+                signals.append({
+                    'code': stock_code,
+                    'name': stock_name,
+                    'signal': signal,
+                    'price': latest['Close'],
+                    'reason': reason,
+                    'tech_analysis': tech_analysis,
+                    'ma5': ma5,
+                    'ma10': ma10,
+                    'ma20': ma20,
+                    'ma60': ma60,
+                    'rsi': rsi,
+                    'macd': macd,
+                    'macd_signal': macd_signal,
+                    'k': k,
+                    'd': d,
+                    'j': j,
+                    'bb_position': bb_position,
+                    'bb_lower': bb_lower,
+                    'bb_upper': bb_upper,
+                    'atr': atr,
+                    'support_20d': support_20d,
+                    'resistance_20d': resistance_20d,
+                    'volume': volume
+                })
 
             except Exception as e:
                 print(f"⚠️ 生成 {stock_code} 信号失败: {e}")
@@ -202,7 +344,7 @@ class AShareEmailSystem:
         return signals
 
     def generate_report_content(self, signals):
-        """生成报告内容"""
+        """生成报告内容（包含详细技术指标）"""
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # 获取指数数据
@@ -215,19 +357,22 @@ class AShareEmailSystem:
         szse_close = szse_data['Close'].iloc[-1] if szse_data is not None else 0
         szse_change = ((szse_data['Close'].iloc[-1] - szse_data['Close'].iloc[-2]) / szse_data['Close'].iloc[-2] * 100) if szse_data is not None and len(szse_data) > 1 else 0
 
-        # 获取预测数据
-        from ml_services.sse_prediction import SSE_Predictor
-        from ml_services.szse_prediction import SZSE_Predictor
-
-        # 运行预测
+        # 计算指数技术指标
         sse_predictor = SSE_Predictor()
         sse_predictor.fetch_data()
+        sse_df = sse_predictor.calculate_technical_indicators(sse_predictor.sse_data)
+        sse_latest = sse_df.iloc[-1]
+
+        szse_predictor = SZSE_Predictor()
+        szse_predictor.fetch_data()
+        szse_df = szse_predictor.calculate_technical_indicators(szse_predictor.szse_data)
+        szse_latest = szse_df.iloc[-1]
+
+        # 运行预测
         sse_predictor.calculate_features()
         sse_score, _ = sse_predictor.calculate_prediction_score()
         sse_trend = sse_predictor.interpret_score(sse_score)[0]
 
-        szse_predictor = SZSE_Predictor()
-        szse_predictor.fetch_data()
         szse_predictor.calculate_features()
         szse_score, _ = szse_predictor.calculate_prediction_score()
         szse_trend = szse_predictor.interpret_score(szse_score)[0]
@@ -271,7 +416,7 @@ class AShareEmailSystem:
             background-color: #f5f5f5;
         }}
         .container {{
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background-color: #fff;
             padding: 30px;
@@ -319,23 +464,45 @@ class AShareEmailSystem:
         .down {{
             color: #43a047;
         }}
-        .signals-table {{
+        .stock-card {{
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }}
+        .stock-header {{
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }}
+        .stock-name {{
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }}
+        .stock-price {{
+            font-size: 20px;
+            font-weight: bold;
+        }}
+        .tech-table {{
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 10px;
+            font-size: 12px;
         }}
-        .signals-table th,
-        .signals-table td {{
+        .tech-table th,
+        .tech-table td {{
             border: 1px solid #ddd;
-            padding: 12px;
+            padding: 6px;
             text-align: left;
         }}
-        .signals-table th {{
-            background-color: #1a73e8;
-            color: #fff;
+        .tech-table th {{
+            background-color: #f5f5f5;
+            font-weight: bold;
         }}
-        .signals-table tr:nth-child(even) {{
-            background-color: #f8f9fa;
+        .tech-table tr:nth-child(even) {{
+            background-color: #f9f9f9;
         }}
         .buy {{
             color: #e53935;
@@ -344,6 +511,14 @@ class AShareEmailSystem:
         .sell {{
             color: #43a047;
             font-weight: bold;
+        }}
+        .analysis-points {{
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }}
+        .analysis-points li {{
+            margin: 3px 0;
         }}
         .footer {{
             text-align: center;
@@ -376,9 +551,50 @@ class AShareEmailSystem:
         </div>
 
         <div class="market-summary" style="background-color: #e3f2fd; border-left: 4px solid #1a73e8;">
+            <h2 style="margin-top: 0;">📊 市场技术指标</h2>
+            <table class="tech-table" style="width: 100%; margin-top: 10px;">
+                <tr style="background-color: #bbdefb;">
+                    <th style="padding: 10px; text-align: left;">指标</th>
+                    <th style="padding: 10px; text-align: left;">上证指数</th>
+                    <th style="padding: 10px; text-align: left;">深证成指</th>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">RSI</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{sse_latest.get('RSI', 0):.1f}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{szse_latest.get('RSI', 0):.1f}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">MACD</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{sse_latest.get('MACD', 0):.2f}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{szse_latest.get('MACD', 0):.2f}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">KDJ-K</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{sse_latest.get('K', 0):.1f}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{szse_latest.get('K', 0):.1f}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">布林带位置</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{sse_latest.get('BB_Position', 0)*100:.1f}%</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{szse_latest.get('BB_Position', 0)*100:.1f}%</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">支撑位</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{sse_latest.get('Support_20d', 0):.2f}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{szse_latest.get('Support_20d', 0):.2f}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">阻力位</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{sse_latest.get('Resistance_20d', 0):.2f}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{szse_latest.get('Resistance_20d', 0):.2f}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="market-summary" style="background-color: #fff3e0; border-left: 4px solid #ff9800;">
             <h2 style="margin-top: 0;">📈 市场预测</h2>
             <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                <tr style="background-color: #bbdefb;">
+                <tr style="background-color: #ffcc80;">
                     <th style="padding: 10px; text-align: left;">指数</th>
                     <th style="padding: 10px; text-align: left;">预测得分</th>
                     <th style="padding: 10px; text-align: left;">预测趋势</th>
@@ -393,15 +609,13 @@ class AShareEmailSystem:
                     <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">{szse_score:.4f}</td>
                     <td style="padding: 10px; border: 1px solid #ddd; color: #e53935; font-weight: bold;">{szse_trend}</td>
                 </tr>
-                <tr style="background-color: #bbdefb;">
+                <tr style="background-color: #ffcc80;">
                     <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">综合判断</td>
                     <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">{avg_score:.4f}</td>
                     <td style="padding: 10px; border: 1px solid #ddd; font-size: 18px; font-weight: bold;">{overall_trend} {trend_emoji}</td>
                 </tr>
             </table>
         </div>
-
-        <h2>🎯 交易信号</h2>
 """
 
         # 分离买入和卖出信号
@@ -416,31 +630,72 @@ class AShareEmailSystem:
             content += f"""
         <div class="market-summary" style="background-color: #e8f5e9; border-left: 4px solid #43a047;">
             <h2 style="margin-top: 0; color: #2e7d32;">🟢 强烈推荐买入 ({len(buy_signals)}只)</h2>
-            <table class="signals-table">
-                <thead>
-                    <tr>
-                        <th>股票代码</th>
-                        <th>股票名称</th>
-                        <th>当前价格</th>
-                        <th>买入理由</th>
-                    </tr>
-                </thead>
-                <tbody>
 """
 
             for signal in buy_signals_sorted:
+                rsi_str = f"{signal['rsi']:.1f}" if pd.notna(signal['rsi']) else 'N/A'
+                macd_str = f"{signal['macd']:.2f}" if pd.notna(signal['macd']) else 'N/A'
+                bb_pos_str = f"{signal['bb_position']*100:.1f}%" if pd.notna(signal['bb_position']) else 'N/A'
+
                 content += f"""
+            <div class="stock-card">
+                <div class="stock-header">
+                    <span class="stock-name">{signal['code']} {signal['name']}</span>
+                    <span class="stock-price buy">¥{signal['price']:.2f}</span>
+                </div>
+                <div style="font-size: 14px; margin-bottom: 10px;">
+                    <strong>买入理由:</strong> {signal['reason']}
+                </div>
+                <table class="tech-table">
                     <tr>
-                        <td>{signal['code']}</td>
-                        <td><strong>{signal['name']}</strong></td>
-                        <td style="color: #e53935; font-weight: bold;">¥{signal['price']:.2f}</td>
-                        <td>{signal['reason']}</td>
+                        <th>指标</th>
+                        <th>数值</th>
+                        <th>信号</th>
                     </tr>
+                    <tr>
+                        <td>MA5/MA20</td>
+                        <td>{signal['ma5']:.2f} / {signal['ma20']:.2f}</td>
+                        <td class="buy">多头</td>
+                    </tr>
+                    <tr>
+                        <td>RSI</td>
+                        <td>{rsi_str}</td>
+                        <td>{'正常' if 30 <= signal['rsi'] <= 70 else '超买' if signal['rsi'] > 70 else '超卖' if pd.notna(signal['rsi']) else 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td>MACD</td>
+                        <td>{macd_str}</td>
+                        <td>{'金叉' if signal['macd'] > signal['macd_signal'] else '死叉' if pd.notna(signal['macd']) and pd.notna(signal['macd_signal']) else 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td>布林带位置</td>
+                        <td>{bb_pos_str}</td>
+                        <td>{'高位' if signal['bb_position'] > 0.8 else '低位' if signal['bb_position'] < 0.2 else '中位' if pd.notna(signal['bb_position']) else 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td>支撑位</td>
+                        <td>{signal['support_20d']:.2f}</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>阻力位</td>
+                        <td>{signal['resistance_20d']:.2f}</td>
+                        <td>-</td>
+                    </tr>
+                </table>
+                <div class="analysis-points">
+                    <strong>技术分析:</strong>
+                    <ul>
+"""
+                for point in signal['tech_analysis'][:5]:  # 显示前5个要点
+                    content += f"<li>{point}</li>"
+                content += """
+                    </ul>
+                </div>
+            </div>
 """
 
             content += """
-                </tbody>
-            </table>
         </div>
 """
 
@@ -448,31 +703,72 @@ class AShareEmailSystem:
             content += f"""
         <div class="market-summary" style="background-color: #ffebee; border-left: 4px solid #e53935;">
             <h2 style="margin-top: 0; color: #c62828;">🔴 推荐卖出 ({len(sell_signals)}只)</h2>
-            <table class="signals-table">
-                <thead>
-                    <tr>
-                        <th>股票代码</th>
-                        <th>股票名称</th>
-                        <th>当前价格</th>
-                        <th>卖出理由</th>
-                    </tr>
-                </thead>
-                <tbody>
 """
 
             for signal in sell_signals_sorted:
+                rsi_str = f"{signal['rsi']:.1f}" if pd.notna(signal['rsi']) else 'N/A'
+                macd_str = f"{signal['macd']:.2f}" if pd.notna(signal['macd']) else 'N/A'
+                bb_pos_str = f"{signal['bb_position']*100:.1f}%" if pd.notna(signal['bb_position']) else 'N/A'
+
                 content += f"""
+            <div class="stock-card">
+                <div class="stock-header">
+                    <span class="stock-name">{signal['code']} {signal['name']}</span>
+                    <span class="stock-price sell">¥{signal['price']:.2f}</span>
+                </div>
+                <div style="font-size: 14px; margin-bottom: 10px;">
+                    <strong>卖出理由:</strong> {signal['reason']}
+                </div>
+                <table class="tech-table">
                     <tr>
-                        <td>{signal['code']}</td>
-                        <td><strong>{signal['name']}</strong></td>
-                        <td style="color: #43a047; font-weight: bold;">¥{signal['price']:.2f}</td>
-                        <td>{signal['reason']}</td>
+                        <th>指标</th>
+                        <th>数值</th>
+                        <th>信号</th>
                     </tr>
+                    <tr>
+                        <td>MA5/MA20</td>
+                        <td>{signal['ma5']:.2f} / {signal['ma20']:.2f}</td>
+                        <td class="sell">空头</td>
+                    </tr>
+                    <tr>
+                        <td>RSI</td>
+                        <td>{rsi_str}</td>
+                        <td>{'正常' if 30 <= signal['rsi'] <= 70 else '超买' if signal['rsi'] > 70 else '超卖' if pd.notna(signal['rsi']) else 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td>MACD</td>
+                        <td>{macd_str}</td>
+                        <td>{'金叉' if signal['macd'] > signal['macd_signal'] else '死叉' if pd.notna(signal['macd']) and pd.notna(signal['macd_signal']) else 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td>布林带位置</td>
+                        <td>{bb_pos_str}</td>
+                        <td>{'高位' if signal['bb_position'] > 0.8 else '低位' if signal['bb_position'] < 0.2 else '中位' if pd.notna(signal['bb_position']) else 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td>支撑位</td>
+                        <td>{signal['support_20d']:.2f}</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>阻力位</td>
+                        <td>{signal['resistance_20d']:.2f}</td>
+                        <td>-</td>
+                    </tr>
+                </table>
+                <div class="analysis-points">
+                    <strong>技术分析:</strong>
+                    <ul>
+"""
+                for point in signal['tech_analysis'][:5]:  # 显示前5个要点
+                    content += f"<li>{point}</li>"
+                content += """
+                    </ul>
+                </div>
+            </div>
 """
 
             content += """
-                </tbody>
-            </table>
         </div>
 """
 
