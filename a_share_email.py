@@ -531,6 +531,7 @@ class AShareEmailSystem:
 <body>
     <div class="container">
         <h1>🇨🇳 A股市场分析报告</h1>
+        <h3 style="text-align: center; color: #666; font-weight: normal; margin-top: -20px; margin-bottom: 20px;">当前预测日期: {now}</h3>
 
         <div class="market-summary">
             <h2>📊 市场概况</h2>
