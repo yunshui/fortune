@@ -27,10 +27,10 @@ jobs:
 
       - name: Run gold analyzer script
         env:
-          YAHOO_EMAIL: ${{ secrets.YAHOO_EMAIL }}
-          YAHOO_APP_PASSWORD: ${{ secrets.YAHOO_APP_PASSWORD }}
+          EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+          EMAIL_AUTHCODE: ${{ secrets.EMAIL_AUTHCODE }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
-          YAHOO_SMTP: ${{ secrets.YAHOO_SMTP }}
+          EMAIL_SMTP: ${{ secrets.EMAIL_SMTP }}
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
           QWEN_CHAT_URL: ${{ secrets.QWEN_CHAT_URL }}
           QWEN_CHAT_MODEL: ${{ secrets.QWEN_CHAT_MODEL }}

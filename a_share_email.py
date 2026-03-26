@@ -215,6 +215,44 @@ class AShareEmailSystem:
         szse_close = szse_data['Close'].iloc[-1] if szse_data is not None else 0
         szse_change = ((szse_data['Close'].iloc[-1] - szse_data['Close'].iloc[-2]) / szse_data['Close'].iloc[-2] * 100) if szse_data is not None and len(szse_data) > 1 else 0
 
+        # 获取预测数据
+        from ml_services.sse_prediction import SSE_Predictor
+        from ml_services.szse_prediction import SZSE_Predictor
+
+        # 运行预测
+        sse_predictor = SSE_Predictor()
+        sse_predictor.fetch_data()
+        sse_predictor.calculate_features()
+        sse_score, _ = sse_predictor.calculate_prediction_score()
+        sse_trend = sse_predictor.interpret_score(sse_score)[0]
+
+        szse_predictor = SZSE_Predictor()
+        szse_predictor.fetch_data()
+        szse_predictor.calculate_features()
+        szse_score, _ = szse_predictor.calculate_prediction_score()
+        szse_trend = szse_predictor.interpret_score(szse_score)[0]
+
+        # 综合判断
+        avg_score = (sse_score + szse_score) / 2
+        if avg_score >= 0.65:
+            overall_trend = "强烈看涨"
+            trend_emoji = "🟢🟢🟢"
+        elif avg_score >= 0.55:
+            overall_trend = "看涨"
+            trend_emoji = "🟢🟢"
+        elif avg_score >= 0.50:
+            overall_trend = "中性偏涨"
+            trend_emoji = "🟢"
+        elif avg_score >= 0.45:
+            overall_trend = "中性偏跌"
+            trend_emoji = "🔴"
+        elif avg_score >= 0.35:
+            overall_trend = "看跌"
+            trend_emoji = "🔴🔴"
+        else:
+            overall_trend = "强烈看跌"
+            trend_emoji = "🔴🔴🔴"
+
         # 生成HTML报告
         content = f"""
 <!DOCTYPE html>
@@ -335,6 +373,32 @@ class AShareEmailSystem:
                     {szse_change:+.2f}%
                 </div>
             </div>
+        </div>
+
+        <div class="market-summary" style="background-color: #e3f2fd; border-left: 4px solid #1a73e8;">
+            <h2 style="margin-top: 0;">📈 市场预测</h2>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <tr style="background-color: #bbdefb;">
+                    <th style="padding: 10px; text-align: left;">指数</th>
+                    <th style="padding: 10px; text-align: left;">预测得分</th>
+                    <th style="padding: 10px; text-align: left;">预测趋势</th>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">上证指数 (000001)</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">{sse_score:.4f}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; color: #e53935; font-weight: bold;">{sse_trend}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">深证成指 (399001)</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">{szse_score:.4f}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; color: #e53935; font-weight: bold;">{szse_trend}</td>
+                </tr>
+                <tr style="background-color: #bbdefb;">
+                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">综合判断</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">{avg_score:.4f}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-size: 18px; font-weight: bold;">{overall_trend} {trend_emoji}</td>
+                </tr>
+            </table>
         </div>
 
         <h2>🎯 交易信号</h2>
@@ -467,8 +531,8 @@ def main():
     args = parser.parse_args()
 
     # 从环境变量读取配置
-    smtp_username = args.smtp_username or os.getenv('SMTP_USERNAME')
-    smtp_password = args.smtp_password or os.getenv('SMTP_PASSWORD')
+    smtp_username = args.smtp_username or os.getenv('EMAIL_ADDRESS')
+    smtp_password = args.smtp_password or os.getenv('EMAIL_AUTHCODE')
     recipient_email = args.recipient_email or os.getenv('RECIPIENT_EMAIL')
 
     # 创建邮件系统

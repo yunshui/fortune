@@ -221,7 +221,7 @@ def get_csi300_index_data(period_days=730):
         return None
 
 
-def get_a_stock_data(stock_code, period_days=90):
+def get_a_stock_data(stock_code, period_days=90, retry_count=3):
     """
     获取A股个股数据
 
@@ -230,54 +230,60 @@ def get_a_stock_data(stock_code, period_days=90):
             - 上交所：如 "600519" (贵州茅台) 或 "601398.SH"
             - 深交所：如 "000858" (五粮液) 或 "000858.SZ"
         period_days (int): 获取数据的天数，默认90天
+        retry_count (int): 重试次数
 
     Returns:
         pandas.DataFrame: 包含个股数据的DataFrame，列包括Date, Open, High, Low, Close, Volume
     """
-    try:
-        # 标准化股票代码（移除交易所后缀）
-        clean_code = stock_code.replace('.SH', '').replace('.SZ', '')
+    # 标准化股票代码（移除交易所后缀）
+    clean_code = stock_code.replace('.SH', '').replace('.SZ', '')
 
-        # AkShare获取个股数据
-        df = ak.stock_zh_a_hist(symbol=clean_code, period="daily")
+    # 判断交易所并添加前缀
+    exchange = 'sh' if clean_code.startswith('6') else 'sz'
+    symbol_with_exchange = f"{exchange}{clean_code}"
 
-        if df.empty:
-            print(f"获取股票 {stock_code} 数据失败：返回数据为空")
-            return None
+    for attempt in range(retry_count):
+        try:
+            # 使用stock_zh_a_daily方法（更稳定）
+            df = ak.stock_zh_a_daily(symbol=symbol_with_exchange, adjust='qfq')
 
-        # 重命名列以保持一致性
-        df = df.rename(columns={
-            '日期': 'Date',
-            '开盘': 'Open',
-            '收盘': 'Close',
-            '最高': 'High',
-            '最低': 'Low',
-            '成交量': 'Volume',
-            '成交额': 'Amount',
-            '涨跌幅': 'ChangePercent',
-            '涨跌额': 'ChangeAmount',
-            '换手率': 'Turnover'
-        })
+            if df.empty:
+                raise ValueError("返回数据为空")
 
-        # 添加股票代码列
-        df['Code'] = stock_code
+            # 重命名列以保持一致性
+            df = df.rename(columns={
+                'open': 'Open',
+                'high': 'High',
+                'low': 'Low',
+                'close': 'Close',
+                'volume': 'Volume'
+            })
 
-        # 确保日期格式正确
-        df['Date'] = pd.to_datetime(df['Date'])
+            # 添加股票代码列
+            df['Code'] = stock_code
 
-        # 按日期排序
-        df = df.sort_values('Date')
-        df.set_index('Date', inplace=True)
+            # 确保日期格式正确
+            df['Date'] = pd.to_datetime(df.index)
 
-        # 限制数据天数
-        if len(df) > period_days:
-            df = df.tail(period_days)
+            # 重置索引并设置Date为索引
+            df.reset_index(drop=True, inplace=True)
+            df.set_index('Date', inplace=True)
 
-        return df
+            # 按日期排序
+            df = df.sort_values('Date')
 
-    except Exception as e:
-        print(f"获取股票 {stock_code} 数据失败: {e}")
-        return None
+            # 限制数据天数
+            if len(df) > period_days:
+                df = df.tail(period_days)
+
+            return df
+
+        except Exception as e:
+            if attempt < retry_count - 1:
+                time.sleep(2)  # 等待2秒后重试
+            else:
+                print(f"获取股票 {stock_code} 数据失败: {e}")
+                return None
 
 
 def get_a_stock_info(stock_code):

@@ -18,8 +18,8 @@ else
 fi
 
 # 验证关键环境变量是否已设置
-if [ -z "$YAHOO_EMAIL" ]; then
-    echo "[iFlow Pre-Test] Error: YAHOO_EMAIL environment variable not set"
+if [ -z "$EMAIL_ADDRESS" ]; then
+    echo "[iFlow Pre-Test] Error: EMAIL_ADDRESS environment variable not set"
     exit 1
 fi
 

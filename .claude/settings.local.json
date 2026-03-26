@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 hsi_prediction.py 2>&1 | head -100)",
+      "Bash(python3 data_services/a_share_finance.py 2>&1 | head -100)",
+      "Bash(python3 a_share_prediction.py --indices sse 2>&1 | head -200)",
+      "Bash(python3 -c \"from data_services.a_share_finance import get_sse_index_data; print\\(get_sse_index_data\\(period_days=30\\)\\)\" 2>&1 | head -50)",
+      "Bash(python3 a_share_prediction.py --indices sse 2>&1)",
+      "Bash(python3 a_share_prediction.py --indices sse,szse 2>&1)",
+      "Bash(python3 a_share_email.py 2>&1 | head -100)",
+      "Bash(python3 a_share_prediction.py --all 2>&1 | tail -80)",
+      "Bash(python3 a_share_email.py 2>&1 | tail -60)",
+      "Bash(git config --list | grep remote)",
+      "Bash(git remote set-url origin git@github.com:yunshui/fortune.git)",
+      "Bash(grep -r \"wonglaitung@google.com\" --include=\"*.py\" --include=\"*.md\" --include=\"*.yml\" --include=\"*.yaml\" . 2>/dev/null | head -20)",
+      "Bash(grep -r \"@gmail.com\\\\|@qq.com\\\\|@163.com\\\\|@126.com\" --include=\"*.py\" --include=\"*.md\" --include=\"*.yml\" . 2>/dev/null | grep -v \"your_email@example.com\" | head -20)",
+      "Bash(grep -r \"YAHOO_SMTP\\\\|YAHOO_EMAIL\\\\|YAHOO_APP_PASSWORD\" --include=\"*.py\" . 2>/dev/null | grep -v \"__pycache__\" | grep -v \"\\\\.pyc\" | cut -d: -f1 | sort -u)",
+      "Bash(grep -r \"EMAIL_SMTP\\\\|EMAIL_ADDRESS\\\\|EMAIL_AUTHCODE\" --include=\"*.py\" . 2>/dev/null | grep -v \"__pycache__\" | head -20)",
+      "Bash(grep -r \"YAHOO_SMTP\\\\|YAHOO_EMAIL\\\\|YAHOO_APP_PASSWORD\" --include=\"*.py\" --include=\"*.md\" --include=\"*.yml\" --include=\"*.yaml\" . 2>/dev/null | grep -v \"__pycache__\" | grep -v \".pyc\" | grep -v \"simulation_trade_log\")",
+      "Bash(grep -r \"YAHOO_SMTP\\\\|YAHOO_EMAIL\\\\|YAHOO_APP_PASSWORD\" --include=\"*.py\" --include=\"*.md\" --include=\"*.yml\" --include=\"*.yaml\" --include=\"*.sh\" . 2>/dev/null | grep -v \"__pycache__\" | grep -v \".pyc\" | grep -v \"simulation_trade_log\" | wc -l)",
+      "Bash(grep -r \"YAHOO_SMTP\\\\|YAHOO_EMAIL\\\\|YAHOO_APP_PASSWORD\" --include=\"*.py\" --include=\"*.md\" --include=\"*.yml\" --include=\"*.yaml\" --include=\"*.sh\" . 2>/dev/null | grep -v \"__pycache__\" | grep -v \".pyc\" | grep -v \"simulation_trade_log\")",
+      "Bash(grep -r \"EMAIL_SMTP\\\\|EMAIL_ADDRESS\\\\|EMAIL_AUTHCODE\" --include=\"*.py\" --include=\"*.md\" --include=\"*.yml\" --include=\"*.yaml\" --include=\"*.sh\" . 2>/dev/null | grep -v \"__pycache__\" | head -30)",
+      "Bash(python3 a_share_prediction.py --all 2>&1 | tail -100)",
+      "Bash(python3 a_share_email.py 2>&1 | tail -80)",
+      "Bash(python3 a_share_email.py 2>&1 | tail -50)",
+      "Bash(python3 hsi_prediction.py --no-email 2>&1 | tail -30)",
+      "Bash(echo \"Email Environment Variables Status:\"\necho \"EMAIL_ADDRESS: ${EMAIL_ADDRESS:+已设置}\"\necho \"EMAIL_AUTHCODE: ${EMAIL_AUTHCODE:+已设置}\"\necho \"EMAIL_SMTP: ${EMAIL_SMTP:+已设置}\"\necho \"RECIPIENT_EMAIL: ${RECIPIENT_EMAIL:+已设置}\")",
+      "Bash(source /Users/yunshuiyang/Workspace/fortune/set_key.sh && python3 a_share_email.py --send-email 2>&1 | tail -80)",
+      "Bash(source /Users/yunshuiyang/Workspace/fortune/set_key.sh && python3 a_share_email.py --send-email 2>&1 | tail -40)",
+      "Bash(source /Users/yunshuiyang/Workspace/fortune/set_key.sh && python3 a_share_prediction.py --all 2>&1 | tail -100)",
+      "Bash(python3 -c \"\nfrom data_services.a_share_finance import get_a_stock_data\nimport time\n\nstocks = ['600519', '600036', '601398', '002594', '000858', '300750', '600900', '601857']\nresults = []\n\nfor code in stocks:\n    try:\n        data = get_a_stock_data\\(code, period_days=30\\)\n        if data is not None and len\\(data\\) >= 20:\n            latest = data.iloc[-1]\n            ma5 = data['Close'].rolling\\(5\\).mean\\(\\).iloc[-1]\n            ma20 = data['Close'].rolling\\(20\\).mean\\(\\).iloc[-1]\n            signal = 'BUY' if ma5 > ma20 else 'SELL' if ma5 < ma20 else 'HOLD'\n            results.append\\({\n                'code': code,\n                'price': latest['Close'],\n                'ma5': ma5,\n                'ma20': ma20,\n                'signal': signal\n            }\\)\n        print\\(f'{code}: ✅ \\({len\\(data\\)} 条\\)'\\)\n    except Exception as e:\n        print\\(f'{code}: ❌ {e}'\\)\n    time.sleep\\(0.5\\)\n\nprint\\('\\\\n=== 交易信号 ==='\\)\nfor r in results:\n    print\\(f\\\\\"{r['code']}: {r['signal']} @ {r['price']:.2f} \\(MA5={r['ma5']:.2f}, MA20={r['ma20']:.2f}\\)\\\\\"\\)\n\")",
+      "Bash(source /Users/yunshuiyang/Workspace/fortune/set_key.sh && python3 a_share_email.py --send-email 2>&1 | tail -20)",
+      "Bash(python3 -c \"\nfrom data_services.a_share_finance import get_a_stock_data\n\n# 测试几个关键股票\nstocks = ['600519', '600036', '601398', '002594', '600900']\n\nprint\\('=== 测试个股数据获取 ==='\\)\nfor code in stocks:\n    data = get_a_stock_data\\(code, period_days=30\\)\n    if data is not None:\n        print\\(f'{code}: ✅ 获取成功，最新价格 {data[\\\\\"Close\\\\\"].iloc[-1]:.2f}, 共 {len\\(data\\)} 条'\\)\n    else:\n        print\\(f'{code}: ❌ 获取失败'\\)\n\")",
+      "Bash(python3 -c \"\nimport akshare as ak\n\n# 尝试使用不同的API方法\nprint\\('=== 尝试备用API方法 ==='\\)\n\n# 方法1: stock_zh_a_hist\ntry:\n    df = ak.stock_zh_a_hist\\(symbol='600519', period='daily', adjust='qfq'\\)\n    print\\(f'方法1 stock_zh_a_hist: {\\\\\"成功\\\\\" if not df.empty else \\\\\"失败\\\\\"} \\({len\\(df\\)}条\\)'\\)\nexcept Exception as e:\n    print\\(f'方法1失败: {e}'\\)\n\n# 方法2: stock_zh_a_daily\ntry:\n    df = ak.stock_zh_a_daily\\(symbol='sh600519', adjust='qfq'\\)\n    print\\(f'方法2 stock_zh_a_daily: {\\\\\"成功\\\\\" if not df.empty else \\\\\"失败\\\\\"} \\({len\\(df\\)}条\\)'\\)\nexcept Exception as e:\n    print\\(f'方法2失败: {e}'\\)\n\n# 方法3: stock_individual_info_em\ntry:\n    info = ak.stock_individual_info_em\\(symbol='600519'\\)\n    print\\(f'方法3 stock_individual_info_em: {\\\\\"成功\\\\\" if not info.empty else \\\\\"失败\\\\\"}'\\)\nexcept Exception as e:\n    print\\(f'方法3失败: {e}'\\)\n\" 2>&1)",
+      "Bash(python3 -c \"\nfrom data_services.a_share_finance import get_a_stock_data\nimport time\n\n# 测试几个关键股票\nstocks = ['600519', '600036', '601398', '002594', '600900', '000858', '300750', '601857']\n\nprint\\('=== 测试修复后的个股数据获取 ==='\\)\nfor code in stocks:\n    data = get_a_stock_data\\(code, period_days=30\\)\n    if data is not None:\n        ma5 = data['Close'].rolling\\(5\\).mean\\(\\).iloc[-1]\n        ma20 = data['Close'].rolling\\(20\\).mean\\(\\).iloc[-1]\n        signal = 'BUY' if ma5 > ma20 else 'SELL' if ma5 < ma20 else 'HOLD'\n        print\\(f'{code}: ✅ 价格={data[\\\\\"Close\\\\\"].iloc[-1]:.2f}, MA5={ma5:.2f}, MA20={ma20:.2f}, 信号={signal}'\\)\n    else:\n        print\\(f'{code}: ❌ 获取失败'\\)\n    time.sleep\\(0.3\\)\n\")",
+      "Bash(source /Users/yunshuiyang/Workspace/fortune/set_key.sh && python3 a_share_email.py --send-email 2>&1 | tail -60)",
+      "Bash(git add -A && git status)"
+    ],
+    "mode": "all"
+  }
+}
