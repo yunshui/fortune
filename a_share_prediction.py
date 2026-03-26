@@ -225,6 +225,7 @@ def main():
     parser.add_argument('--indices', type=str, default='sse,szse',
                         help='预测的指数，逗号分隔（sse,szse,csi300）')
     parser.add_argument('--all', action='store_true', help='预测所有支持的指数')
+    parser.add_argument('--send-email', action='store_true', help='发送预测邮件')
 
     args = parser.parse_args()
 
@@ -247,6 +248,35 @@ def main():
             print(f"  {pred['index_name']} ({pred['index_code']}): {pred['prediction_trend']}")
         if 'overall_trend' in summary:
             print(f"  综合趋势: {summary['overall_trend']}")
+
+    # 发送邮件
+    if args.send_email:
+        print("\n" + "=" * 100)
+        print("正在发送预测邮件...")
+        print("=" * 100)
+
+        try:
+            from a_share_email import AShareEmailSystem
+
+            # 获取环境变量
+            smtp_username = os.getenv('EMAIL_ADDRESS')
+            smtp_password = os.getenv('EMAIL_AUTHCODE')
+            recipient_email = os.getenv('RECIPIENT_EMAIL')
+
+            # 创建邮件系统并发送
+            email_system = AShareEmailSystem(
+                smtp_username=smtp_username,
+                smtp_password=smtp_password,
+                recipient_email=recipient_email
+            )
+
+            # 运行分析并发送邮件
+            email_system.run(send_email=True)
+
+        except ImportError:
+            print("❌ 邮件模块不可用，跳过邮件发送")
+        except Exception as e:
+            print(f"❌ 邮件发送失败: {e}")
 
 
 if __name__ == '__main__':

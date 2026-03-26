@@ -35,7 +35,14 @@
       "Bash(python3 -c \"\nfrom data_services.a_share_finance import get_a_stock_data\nimport time\n\n# 测试几个关键股票\nstocks = ['600519', '600036', '601398', '002594', '600900', '000858', '300750', '601857']\n\nprint\\('=== 测试修复后的个股数据获取 ==='\\)\nfor code in stocks:\n    data = get_a_stock_data\\(code, period_days=30\\)\n    if data is not None:\n        ma5 = data['Close'].rolling\\(5\\).mean\\(\\).iloc[-1]\n        ma20 = data['Close'].rolling\\(20\\).mean\\(\\).iloc[-1]\n        signal = 'BUY' if ma5 > ma20 else 'SELL' if ma5 < ma20 else 'HOLD'\n        print\\(f'{code}: ✅ 价格={data[\\\\\"Close\\\\\"].iloc[-1]:.2f}, MA5={ma5:.2f}, MA20={ma20:.2f}, 信号={signal}'\\)\n    else:\n        print\\(f'{code}: ❌ 获取失败'\\)\n    time.sleep\\(0.3\\)\n\")",
       "Bash(source /Users/yunshuiyang/Workspace/fortune/set_key.sh && python3 a_share_email.py --send-email 2>&1 | tail -60)",
       "Bash(git add -A && git status)",
-      "Bash(source set_key.sh && python3 a_share_email.py --send-email 2>&1 | tail -100)"
+      "Bash(source set_key.sh && python3 a_share_email.py --send-email 2>&1 | tail -100)",
+      "Bash(git commit -m \"feat: classify buy/sell signals in A-share email\n\n- Separate buy and sell signals into different sections\n- Buy signals: green background, sorted by price low to high\n- Sell signals: red background, sorted by price high to low\n- Improve visual distinction and readability\")",
+      "Bash(git push origin main)",
+      "Bash(python3 hsi_prediction.py 2>&1 | tail -80)",
+      "Bash(source set_key.sh && python3 hsi_prediction.py 2>&1 | tail -40)",
+      "Bash(python3 hk_stock_analysis.py 2>&1)",
+      "Bash(python3 a_share_prediction.py --send-email 2>&1 | tail -100)",
+      "Bash(source set_key.sh && python3 a_share_prediction.py --send-email 2>&1 | tail -60)"
     ],
     "mode": "all"
   }

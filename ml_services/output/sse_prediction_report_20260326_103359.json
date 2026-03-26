@@ -1,0 +1,185 @@
+{
+  "timestamp": "20260326_103359",
+  "prediction_date": "2026-03-25",
+  "index_name": "上证指数",
+  "index_code": "000001",
+  "current_price": 3931.838,
+  "price_change": 1.3026115096050785,
+  "prediction_score": 0.9686010040431312,
+  "prediction_trend": "强烈看涨",
+  "features": {
+    "MA250": 3733.1791200000002,
+    "Volume_MA250": 57395832620.8,
+    "MA120": 3992.943683333333,
+    "60d_RS_Signal_MA250": 1.0,
+    "60d_RS_Signal_Volume_MA250": 1.0,
+    "20d_RS_Signal_MA250": 1.0,
+    "10d_RS_Signal_MA250": 1.0,
+    "5d_RS_Signal_MA250": 1.0,
+    "3d_RS_Signal_MA250": 1.0,
+    "60d_Trend_MA250": 1.0,
+    "20d_Trend_MA250": 1.0,
+    "10d_Trend_MA250": 1.0,
+    "5d_Trend_MA250": 1.0,
+    "3d_Trend_MA250": 1.0,
+    "60d_Trend_Volume_MA250": 1.0,
+    "20d_Trend_Volume_MA250": 1.0,
+    "Volatility_120d": 0.008434694212858515,
+    "60d_Trend_MA120": 1.0,
+    "20d_RS_Signal_Volume_MA250": 1.0
+  },
+  "feature_details": [
+    {
+      "feature": "MA250",
+      "value": 3733.1791200000002,
+      "normalized": 0.7881853874141852,
+      "weight": 0.15,
+      "direction": 1,
+      "contribution": 0.11822780811212777
+    },
+    {
+      "feature": "Volume_MA250",
+      "value": 57395832620.8,
+      "normalized": 1.0,
+      "weight": 0.12,
+      "direction": 1,
+      "contribution": 0.12
+    },
+    {
+      "feature": "MA120",
+      "value": 3992.943683333333,
+      "normalized": 0.8146971071470793,
+      "weight": 0.1,
+      "direction": 1,
+      "contribution": 0.08146971071470793
+    },
+    {
+      "feature": "60d_RS_Signal_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.08,
+      "direction": 1,
+      "contribution": 0.08
+    },
+    {
+      "feature": "60d_RS_Signal_Volume_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.06,
+      "direction": 1,
+      "contribution": 0.06
+    },
+    {
+      "feature": "20d_RS_Signal_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.04,
+      "direction": 1,
+      "contribution": 0.04
+    },
+    {
+      "feature": "10d_RS_Signal_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.035,
+      "direction": 1,
+      "contribution": 0.035
+    },
+    {
+      "feature": "5d_RS_Signal_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.03,
+      "direction": 1,
+      "contribution": 0.03
+    },
+    {
+      "feature": "3d_RS_Signal_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.025,
+      "direction": 1,
+      "contribution": 0.025
+    },
+    {
+      "feature": "60d_Trend_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.05,
+      "direction": 1,
+      "contribution": 0.05
+    },
+    {
+      "feature": "20d_Trend_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.045,
+      "direction": 1,
+      "contribution": 0.045
+    },
+    {
+      "feature": "10d_Trend_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.04,
+      "direction": 1,
+      "contribution": 0.04
+    },
+    {
+      "feature": "5d_Trend_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.035,
+      "direction": 1,
+      "contribution": 0.035
+    },
+    {
+      "feature": "3d_Trend_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.03,
+      "direction": 1,
+      "contribution": 0.03
+    },
+    {
+      "feature": "60d_Trend_Volume_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.045,
+      "direction": 1,
+      "contribution": 0.045
+    },
+    {
+      "feature": "20d_Trend_Volume_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.035,
+      "direction": 1,
+      "contribution": 0.035
+    },
+    {
+      "feature": "Volatility_120d",
+      "value": 0.008434694212858515,
+      "normalized": -0.0626122314856594,
+      "weight": 0.04,
+      "direction": -1,
+      "contribution": 0.002504489259426376
+    },
+    {
+      "feature": "60d_Trend_MA120",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.035,
+      "direction": 1,
+      "contribution": 0.035
+    },
+    {
+      "feature": "20d_RS_Signal_Volume_MA250",
+      "value": 1.0,
+      "normalized": 1.0,
+      "weight": 0.03,
+      "direction": 1,
+      "contribution": 0.03
+    }
+  ]
+}
