@@ -174,6 +174,114 @@ def get_szse_index_data(period_days=730, retry_count=3):
     return None
 
 
+def get_sse_index_realtime():
+    """
+    获取上证指数实时行情
+
+    Returns:
+        dict: 包含上证指数实时行情的字典，包括代码、名称、最新价、涨跌额、涨跌幅、今开、最高、最低、昨收
+    """
+    try:
+        realtime_data = ak.stock_zh_index_spot_em()
+        sse_row = realtime_data[realtime_data['代码'] == '000001']
+
+        if not sse_row.empty:
+            row = sse_row.iloc[0]
+            return {
+                'code': row['代码'],
+                'name': row['名称'],
+                'current_price': row['最新价'],
+                'change': row['涨跌额'],
+                'change_pct': row['涨跌幅'],
+                'open': row['今开'],
+                'high': row['最高'],
+                'low': row['最低'],
+                'pre_close': row['昨收'],
+                'volume': row.get('成交量', 0),
+                'amount': row.get('成交额', 0)
+            }
+        return None
+
+    except Exception as e:
+        print(f"获取上证指数实时行情失败: {e}")
+        return None
+
+
+def get_szse_index_realtime():
+    """
+    获取深证成指实时行情
+
+    Returns:
+        dict: 包含深证成指实时行情的字典
+    """
+    try:
+        realtime_data = ak.stock_zh_index_spot_em()
+        szse_row = realtime_data[realtime_data['代码'] == '399001']
+
+        if not szse_row.empty:
+            row = szse_row.iloc[0]
+            return {
+                'code': row['代码'],
+                'name': row['名称'],
+                'current_price': row['最新价'],
+                'change': row['涨跌额'],
+                'change_pct': row['涨跌幅'],
+                'open': row['今开'],
+                'high': row['最高'],
+                'low': row['最低'],
+                'pre_close': row['昨收'],
+                'volume': row.get('成交量', 0),
+                'amount': row.get('成交额', 0)
+            }
+        return None
+
+    except Exception as e:
+        print(f"获取深证成指实时行情失败: {e}")
+        return None
+
+
+def get_a_stock_realtime(stock_code):
+    """
+    获取A股个股实时行情
+
+    Args:
+        stock_code (str): 股票代码（如 "600519" 或 "600519.SH"）
+
+    Returns:
+        dict: 包含个股实时行情的字典
+    """
+    try:
+        # 标准化股票代码
+        clean_code = stock_code.replace('.SH', '').replace('.SZ', '')
+
+        realtime_data = ak.stock_zh_a_spot_em()
+        stock_row = realtime_data[realtime_data['代码'] == clean_code]
+
+        if not stock_row.empty:
+            row = stock_row.iloc[0]
+            return {
+                'code': row['代码'],
+                'name': row['名称'],
+                'current_price': row['最新价'],
+                'change': row['涨跌额'],
+                'change_pct': row['涨跌幅'],
+                'open': row['今开'],
+                'high': row['最高'],
+                'low': row['最低'],
+                'pre_close': row['昨收'],
+                'volume': row['成交量'],
+                'amount': row['成交额'],
+                'amplitude': row['振幅'],
+                'pe': row.get('市盈率-动态', 0),
+                'market_cap': row.get('总市值', 0)
+            }
+        return None
+
+    except Exception as e:
+        print(f"获取股票 {stock_code} 实时行情失败: {e}")
+        return None
+
+
 def get_csi300_index_data(period_days=730):
     """
     获取沪深300指数数据

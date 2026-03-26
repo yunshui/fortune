@@ -38,8 +38,11 @@ try:
     from data_services.a_share_finance import (
         get_sse_index_data,
         get_szse_index_data,
+        get_sse_index_realtime,
+        get_szse_index_realtime,
         get_csi300_index_data,
-        get_a_stock_data
+        get_a_stock_data,
+        get_a_stock_realtime
     )
     A_SHARE_DATA_AVAILABLE = True
 except ImportError:
@@ -133,11 +136,31 @@ class AShareEmailSystem:
         print("📊 获取A股市场数据...")
 
         try:
-            # 获取上证指数数据
+            # 获取上证指数历史数据
             self.cache['sse_data'] = get_sse_index_data(period_days=self.period_days)
 
-            # 获取深证成指数据
+            # 获取深证成指历史数据
             self.cache['szse_data'] = get_szse_index_data(period_days=self.period_days)
+
+            # 获取上证指数实时行情
+            print("  获取上证指数实时行情...")
+            sse_realtime = get_sse_index_realtime()
+            if sse_realtime:
+                self.cache['sse_realtime'] = sse_realtime
+                print(f"  ✅ 上证指数实时价: {sse_realtime['current_price']} ({sse_realtime['change_pct']:+.2f}%)")
+            else:
+                self.cache['sse_realtime'] = None
+                print("  ⚠️ 上证指数实时行情获取失败")
+
+            # 获取深证成指实时行情
+            print("  获取深证成指实时行情...")
+            szse_realtime = get_szse_index_realtime()
+            if szse_realtime:
+                self.cache['szse_realtime'] = szse_realtime
+                print(f"  ✅ 深证成指实时价: {szse_realtime['current_price']} ({szse_realtime['change_pct']:+.2f}%)")
+            else:
+                self.cache['szse_realtime'] = None
+                print("  ⚠️ 深证成指实时行情获取失败")
 
             # 获取个股数据
             for stock_code in self.stock_list:
@@ -347,15 +370,26 @@ class AShareEmailSystem:
         """生成报告内容（包含详细技术指标）"""
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # 获取指数数据
-        sse_data = self.cache.get('sse_data')
-        szse_data = self.cache.get('szse_data')
+        # 获取指数实时行情数据（优先使用实时数据）
+        sse_realtime = self.cache.get('sse_realtime')
+        szse_realtime = self.cache.get('szse_realtime')
 
-        sse_close = sse_data['Close'].iloc[-1] if sse_data is not None else 0
-        sse_change = ((sse_data['Close'].iloc[-1] - sse_data['Close'].iloc[-2]) / sse_data['Close'].iloc[-2] * 100) if sse_data is not None and len(sse_data) > 1 else 0
+        # 使用实时行情，如果没有则回退到历史数据
+        if sse_realtime:
+            sse_close = sse_realtime['current_price']
+            sse_change = sse_realtime['change_pct']
+        else:
+            sse_data = self.cache.get('sse_data')
+            sse_close = sse_data['Close'].iloc[-1] if sse_data is not None else 0
+            sse_change = ((sse_data['Close'].iloc[-1] - sse_data['Close'].iloc[-2]) / sse_data['Close'].iloc[-2] * 100) if sse_data is not None and len(sse_data) > 1 else 0
 
-        szse_close = szse_data['Close'].iloc[-1] if szse_data is not None else 0
-        szse_change = ((szse_data['Close'].iloc[-1] - szse_data['Close'].iloc[-2]) / szse_data['Close'].iloc[-2] * 100) if szse_data is not None and len(szse_data) > 1 else 0
+        if szse_realtime:
+            szse_close = szse_realtime['current_price']
+            szse_change = szse_realtime['change_pct']
+        else:
+            szse_data = self.cache.get('szse_data')
+            szse_close = szse_data['Close'].iloc[-1] if szse_data is not None else 0
+            szse_change = ((szse_data['Close'].iloc[-1] - szse_data['Close'].iloc[-2]) / szse_data['Close'].iloc[-2] * 100) if szse_data is not None and len(szse_data) > 1 else 0
 
         # 计算指数技术指标
         sse_predictor = SSE_Predictor()
