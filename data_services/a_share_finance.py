@@ -215,29 +215,51 @@ def get_szse_index_realtime():
         dict: 包含深证成指实时行情的字典
     """
     try:
-        # 获取今天日期
-        from datetime import datetime
-        today = datetime.now().strftime('%Y%m%d')
+        # 使用与上证指数相同的稳定API
+        df = ak.stock_zh_index_daily(symbol="sz399001")
 
-        # 使用index_zh_a_hist获取当天数据
-        df = ak.index_zh_a_hist(symbol='399001', period='daily', start_date=today, end_date=today)
+        if df.empty:
+            return None
 
-        if not df.empty:
-            row = df.iloc[0]
-            return {
-                'code': '399001',
-                'name': '深证成指',
-                'current_price': row['收盘'],
-                'change': row['涨跌额'],
-                'change_pct': row['涨跌幅'],
-                'open': row['开盘'],
-                'high': row['最高'],
-                'low': row['最低'],
-                'pre_close': row['昨收'] if '昨收' in row else row['收盘'] - row['涨跌额'],
-                'volume': row.get('成交量', 0),
-                'amount': row.get('成交额', 0)
-            }
-        return None
+        # 重命名列以保持一致性
+        df = df.rename(columns={
+            'date': 'Date',
+            'open': 'Open',
+            'close': 'Close',
+            'high': 'High',
+            'low': 'Low',
+            'volume': 'Volume'
+        })
+
+        # 确保日期格式正确
+        df['Date'] = pd.to_datetime(df['Date'])
+
+        # 按日期排序并获取最新数据
+        df = df.sort_values('Date')
+        latest = df.iloc[-1]
+
+        # 计算涨跌幅
+        if len(df) > 1:
+            prev_close = df.iloc[-2]['Close']
+            change = latest['Close'] - prev_close
+            change_pct = (change / prev_close) * 100
+        else:
+            change = 0
+            change_pct = 0
+
+        return {
+            'code': '399001',
+            'name': '深证成指',
+            'current_price': latest['Close'],
+            'change': change,
+            'change_pct': change_pct,
+            'open': latest['Open'],
+            'high': latest['High'],
+            'low': latest['Low'],
+            'pre_close': prev_close if len(df) > 1 else latest['Close'],
+            'volume': latest['Volume'],
+            'amount': latest.get('amount', 0)
+        }
 
     except Exception as e:
         print(f"获取深证成指实时行情失败: {e}")
