@@ -215,21 +215,25 @@ def get_szse_index_realtime():
         dict: 包含深证成指实时行情的字典
     """
     try:
-        realtime_data = ak.stock_zh_index_spot_em()
-        szse_row = realtime_data[realtime_data['代码'] == '399001']
+        # 获取今天日期
+        from datetime import datetime
+        today = datetime.now().strftime('%Y%m%d')
 
-        if not szse_row.empty:
-            row = szse_row.iloc[0]
+        # 使用index_zh_a_hist获取当天数据
+        df = ak.index_zh_a_hist(symbol='399001', period='daily', start_date=today, end_date=today)
+
+        if not df.empty:
+            row = df.iloc[0]
             return {
-                'code': row['代码'],
-                'name': row['名称'],
-                'current_price': row['最新价'],
+                'code': '399001',
+                'name': '深证成指',
+                'current_price': row['收盘'],
                 'change': row['涨跌额'],
                 'change_pct': row['涨跌幅'],
-                'open': row['今开'],
+                'open': row['开盘'],
                 'high': row['最高'],
                 'low': row['最低'],
-                'pre_close': row['昨收'],
+                'pre_close': row['昨收'] if '昨收' in row else row['收盘'] - row['涨跌额'],
                 'volume': row.get('成交量', 0),
                 'amount': row.get('成交额', 0)
             }
